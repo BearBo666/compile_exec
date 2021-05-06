@@ -1,12 +1,14 @@
 const       a=10;
-    var         b,c;
-    procedure    p;
-      begin
-       c:=b+a
-      end;
+var         b,c;
+procedure    p;
     begin
+      c:=b+a
+    end;
 
-number:201913137151
-name:xb
+begin
+
+number`201913137151
+name`xb
+
 end.
 name:xb

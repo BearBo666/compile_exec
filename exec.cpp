@@ -4,12 +4,13 @@
 
 using namespace std;
 
-//保留字
-char stayWord[13][15] = {"const", "var", "procedure", "begin", "end", "odd", "if", "then", "call", "while", "do", "read", "write"};
-//运算符
-char CaculationSymbol[8] = {'+', '-', '/', '>', '<', '=', '#', ';'};
-//分析结果
-char result[100][100];
+//保留字和运算符的个数
+#define StayNum 13
+#define CaclulateNum 9
+
+//保留字  运算符
+char stayWord[StayNum][15] = {"const", "var", "procedure", "begin", "end", "odd", "if", "then", "call", "while", "do", "read", "write"};
+char caculation[CaclulateNum] = {'+', '-', '*', '/', '>', '<', '=', '#', ':'};
 
 //判断词法类型
 bool isNumber(char ch);
@@ -20,9 +21,6 @@ bool isStayWord(char *str);
 
 //接受文件里的PL语言
 void getInput(char *fileName, char *str);
-//
-void calulationString(char *str);
-bool bandString(char *str);
 
 //词法分析
 void Analysis(char *InputFileName, char *str);
@@ -41,22 +39,22 @@ int main()
 //1.判断字符是否是数字
 bool isNumber(char ch)
 {
-    return ch >= '0' && ch <= '9' ? true : false;
+    return ch >= '0' && ch <= '9';
 }
 
 //2.判断字符是否是字母
 bool isCase(char ch)
 {
-    return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) ? true : false;
+    return ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'));
 }
 
 //3.判断字符是否是运算符
-bool isCaculationSymbol(char ch)
+bool isCaculation(char ch)
 {
     int i;
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < CaclulateNum; i++)
     {
-        if (ch == CaculationSymbol[i])
+        if (ch == caculation[i])
         {
             return true;
         }
@@ -65,21 +63,23 @@ bool isCaculationSymbol(char ch)
 }
 
 //4.判断字符是否是界符
-bool isBandSymbol(char ch)
+bool isBoundary(char ch)
 {
-    return (ch == '(' || ch == ')' || ch == ',' || ch == ';' || ch == '.') ? true : false;
+    return (ch == '(' || ch == ')' || ch == ',' || ch == ';' || ch == '.');
 }
 
 //5.判断字符串是否是保留字
 bool isStayWord(char *str)
 {
     int i;
-    for (i = 0; i < 13; ++i)
+    for (i = 0; i < StayNum; ++i)
     {
-        if (!strcmp(str, stayWord[i]))
-            break;
+        if (strcmp(str, stayWord[i]) == 0)
+        {
+            return true;
+        }
     }
-    return i;
+    return false;
 }
 
 //从文件中读取输入流
@@ -99,94 +99,6 @@ void getInput(char *fileName, char *str)
     fclose(f);
 }
 
-//打印运算符
-void calulationString(char *str)
-{
-    int len = strlen(str);
-    int i;
-    for (i = 0; i < len; ++i)
-    {
-        if (str[i] == ':')
-        {
-            if (i + 1 < len && str[i + 1] == '=')
-            {
-                printf("  :=  ?????\n");
-                i++;
-            }
-            else
-            {
-                printf("  %c  ????????\n", str[i]);
-            }
-        }
-        else if (str[i] == '>')
-        {
-            if (i + 1 < len && str[i + 1] == '=')
-            {
-                printf("  >=  ????????\n");
-                i++;
-            }
-            else
-            {
-                printf("  >  ????????\n");
-            }
-        }
-        else if (str[i] == '<')
-        {
-            if (i + 1 < len && str[i + 1] == '=')
-            {
-                printf("  <=  ????????\n");
-                i++;
-            }
-            else
-                printf("  <  ????????\n");
-            ;
-        }
-        else
-        {
-            printf("  %c  ?????\n", str[i]);
-        }
-    }
-}
-
-//打印界符,并返回是否
-bool bandString(char *str)
-{
-    int len, i;
-    len = strlen(str);
-    for (i = 0; i < len; ++i)
-        switch (str[i])
-        {
-
-        case '(':
-            printf("  (  界符\n");
-            return false;
-        case ')':
-            printf("  )  界符\n");
-            return false;
-        case ',':
-            printf("  ,  界符\n");
-            return false;
-        case ';':
-            printf("  ;  界符\n");
-            return false;
-        case '.':
-            printf("  .  界符\n");
-            return true;
-        default:
-            return false;
-        }
-}
-
-//????????????
-void tokenWord(char *str)
-{
-    int length = strlen(str);
-    int i;
-    for (i = 1; i < length; i++)
-    {
-    }
-}
-
 //词法分析
 void Analysis(char *filePath, char *source)
 {
@@ -196,9 +108,9 @@ void Analysis(char *filePath, char *source)
     //文件流字符串长度, 要分析的字符串的长度, 某个词法字符串的长度
     int length = strlen(source), length1, length2;
     //中间变量
-    int i = 0, j, k, t, index;
+    int i = 0, j, k, t;
     //分析结果,中间变量
-    char target[100], temp[100];
+    char target[1000], temp[100];
 
     //循环读取文件流字符串
     while (i < length)
@@ -222,77 +134,73 @@ void Analysis(char *filePath, char *source)
         //循环要分析的字符串
         while (k < length1)
         {
-            //判断是否是是字母
+            //若字符为字母则持续读入
             if (isCase(target[k]))
             {
                 t = 0;
-                //
-                while ((!isCaculationSymbol(target[k])) && (!isBandSymbol(target[k])) && k < length1)
+                while (isCase(target[k]) && k < length1)
                 {
                     temp[t++] = target[k++];
                 }
                 temp[t] = '\0';
-                index = isStayWord(temp);
-                if (index < 13)
+                //判断是否是保留字
+                if (isStayWord(temp))
                 {
-                    printf("  %s  ??????\n", stayWord[index]);
-
-                    //赋给中间
-                    strcpy(temp, "");
-                    t = 0;
+                    printf("%s  基本字\n", temp);
                 }
                 else
                 {
-                    printf("  %s  ?????\n", temp);
-                    strcpy(temp, "");
-                    t = 0;
+                    printf("%s  标识符\n", temp);
                 }
+                strcpy(temp, "");
             }
-            //?鍗???????????
+            //若字符为数字则持续读入
             else if (isNumber(target[k]))
             {
+                t = 0;
                 while (isNumber(target[k]) && k < length1)
-                    temp[t++] = target[k++];
-                temp[t] = '\0';
-                printf("  %s  ????\n", temp);
-                strcpy(temp, "");
-                t = 0;
-            }
-            //?鍗????????????
-            else if (isCaculationSymbol(target[k]))
-            {
-                while (isCaculationSymbol(target[k]) && k < length1)
-                    temp[t++] = target[k++];
-                temp[t] = '\0';
-                calulationString(temp);
-                strcpy(temp, "");
-                t = 0;
-            }
-            //?鍗?????????
-            else if (isBandSymbol(target[k]))
-            {
-                while (isBandSymbol(target[k]) && k < length1)
                 {
                     temp[t++] = target[k++];
                 }
                 temp[t] = '\0';
-                bool flag = bandString(temp);
-                if (flag == true)
-                {
-                    printf("????");
-                    goto end;
-                }
+                printf("%s  数字\n", temp);
+
                 strcpy(temp, "");
-                t = 0;
+            }
+            //判断字符是否是界符
+            else if (isBoundary(target[k]))
+            {
+                printf("%c  界符\n", target[k++]);
+                //判断是否结束
+                if (target[k - 1] == '.')
+                {
+                    return;
+                }
+            }
+            //判断字符是否是是运算符
+            else if (isCaculation(target[k]))
+            {
+                if (target[k] == '<' || target[k] == '>' || target[k] == ':')
+                {
+                    if (target[k + 1] == '=')
+                    {
+                        printf("%c%c  运算符\n", target[k], target[++k]);
+                    }
+                    else
+                    {
+                        printf("%c  运算符\n", target[k++]);
+                    }
+                }
+                else
+                {
+                    printf("%c  运算符\n", target[k++]);
+                }
             }
             else
             {
-                printf(" %c ???\n", target[k]);
-                k++;
+                printf("%c  非法\n", target[k++]);
             }
         }
         strcpy(temp, "");
     }
-end:
-    fclose(stdout);
 }
