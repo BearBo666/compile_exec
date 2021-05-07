@@ -8,13 +8,13 @@
 #define MaxPLength 20
 #define MaxStLength 50
 
+//==================== 0.数据结构 ======================
 //右部字符节点
 struct pRNode
 {
   int rCursor;         //字符在终结符数组的下标
   struct pRNode *next; //下一节点指针
 };
-
 //产生式结点结构
 struct pNode
 {
@@ -22,53 +22,44 @@ struct pNode
   int rLength;          //右部长度
   struct pRNode *rHead; //右部链表头指针
 };
-
 //非终结符
 char Vn[MaxVnNum + 1];
 int vnNum;
-
 //终结符
 char Vt[MaxVtNum + 1];
 int vtNum;
-
 //产生式
 struct pNode P[MaxRuleNum];
 int PNum;
-
 //缓冲区
 char buffer[MaxPLength + 1];
 char ch;
 //待分析符号串
 char st[MaxStLength];
-
 //集合(first or follow集)节点
 struct collectNode
 {
   int nVt; //终结符下标
   struct collectNode *next;
 };
-
 //first集
 struct collectNode *first[MaxVnNum + 1];
 //follow集
 struct collectNode *follow[MaxVnNum + 1];
-
-//预测分析表,存放为产生式的编号，+1用于存放结束符，多+1用于存放#(-1)
+//预测分析表,存放为产生式的编号;+1用于存放结束符，多+1用于存放#(-1)
 int analyseTable[MaxVnNum + 1][MaxVtNum + 1 + 1];
-
 //分析栈,栈顶指针
 int analyseStack[MaxStackDepth + 1];
 int topAnalyse;
 
+//======================= 1.初始化读取 ===========================
 //初始化
 void Init();
 //返回终结符,非终结符在vn,vt中的位置,-1表示没找到
 int IndexCh(char ch);
-
 //输入终结符,非终结符
 void InputVt();
 void InputVn();
-
 //输出终结符或非终结符
 void ShowChArray(char *collect, int num);
 //输入产生式
@@ -76,27 +67,28 @@ void InputP();
 //判断产生式是否正确
 bool CheckP(char *st);
 
+//================== 2.计算打印first和follow集 ===================
 //计算first集
 void First(int U);
 //加入一个first集合元素
 void AddFirst(int U, int nCh);
 //判断first集中是否有空
 bool HaveEmpty(int nVn);
-
 //follow集合操作
 void Follow(int V);
 void AddFollow(int V, int nCh, int kind);
-
 //输出first集,follow集;计算first集,follow集
 void ShowCollect(struct collectNode **collect);
 void FirstFollow();
 
+//==================== 3.计算预测分析表 ========================
 //计算预测分析表;打印预测分析表
 void CreateAT();
 void ShowAT();
+
+//==================== 4.分析句子 =============================
 //主控程序,为操作方便
 void Identify(char *st);
-
 //栈操作:初始化,打印,出栈,入栈
 void InitStack();
 void ShowStack();
@@ -167,7 +159,8 @@ int main()
   getchar();
 }
 
-//==================== 初始化读取 ======================
+//==================== 1.初始化读取 ======================
+//1.1初始化空间
 void Init()
 {
   int i, j;
@@ -201,11 +194,12 @@ void Init()
       analyseTable[i][j] = -1;
   }
 }
-//返回字符在vn,vt中的下标,在vn中则返回下标+100,在vt中则返回下标
+//1.2返回字符在vn,vt中的下标,在vn中则返回下标+100,在vt中则返回下标
 int IndexCh(char ch)
 {
   int n;
   n = 0;
+  //遍历非终结符
   while (ch != Vn[n] && '\0' != Vn[n])
     n++;
   if ('\0' != Vn[n])
@@ -217,7 +211,7 @@ int IndexCh(char ch)
     return n;
   return -1;
 }
-//输出Vn或Vt的内容
+//1.3打印Vn或Vt的内容
 void ShowChArray(char *collect)
 {
   int k = 0;
@@ -227,7 +221,7 @@ void ShowChArray(char *collect)
   }
   printf("\n");
 }
-//输入非终结符
+//1.4输入非终结符
 void InputVn()
 {
   int inErr = 1;
@@ -291,7 +285,7 @@ void InputVn()
     }
   }
 }
-//输入终结符 同非终结符输入
+//1.5输入终结符 同非终结符输入
 void InputVt()
 {
   int inErr = 1;
@@ -353,7 +347,7 @@ void InputVt()
     }
   }
 }
-//产生式输入
+//1.6产生式输入
 void InputP()
 {
   char ch;
@@ -378,6 +372,7 @@ void InputP()
       if (' ' != ch)
         buffer[n++] = ch;
     }
+    //若A->  即A推出空,此处为\0,IndexCh返回-1
     buffer[n] = '\0';
     //判断产生式是否合法
     if (CheckP(buffer))
@@ -409,7 +404,7 @@ void InputP()
       printf("输入符号含非法在成分，请重新输入！\n");
   }
 }
-//判断产生式正确性
+//1.7判断产生式正确性
 bool CheckP(char *st)
 {
   //格式：非终结符->多个终结符|非终结符
@@ -428,8 +423,8 @@ bool CheckP(char *st)
   return true;
 }
 
-/*====================first & follow======================*/
-//计算first集
+//================== 2.计算打印first和follow集 ===================
+//2.1计算非终结符U的first集
 void First(int U)
 {
   int i, j;
@@ -459,24 +454,30 @@ void First(int U)
           {
             First(pt->rCursor);
           }
+          //将此节点添加到U的first集中
           AddFirst(U, pt->rCursor);
+          //若first中没有空则跳出循环
           if (!HaveEmpty(pt->rCursor))
           {
             break;
           }
           else
           {
+            //否则继续计算下一个字符的first
             pt = pt->next;
           }
         }
+        //加一表示右部字符都没有break出循环
         j++;
       }
-      if (j >= P[i].rLength) /*当产生式右部都能推出空时*/
+      //大于等于右部字符串的长度说明每个右部字符都没有break出循环
+      //即：每一个右部字符都能推出空,将空添加到U的first集
+      if (j >= P[i].rLength)
         AddFirst(U, -1);
     }
   }
 }
-//加入first集
+//2.2加入first集
 void AddFirst(int U, int nCh)
 {
   struct collectNode *pt, *qt;
@@ -486,53 +487,68 @@ void AddFirst(int U, int nCh)
   //当nCh<100时意味着是终结符
   if (nCh < 100)
   {
+    //获得U的first集头指针
     pt = first[U - 100];
+    //如果头指针非空
     while (NULL != pt)
     {
+      //如果此终结符就在first集中
       if (pt->nVt == nCh)
         break;
       else
       {
+        //将qt指向最后一个节点,pt指向尾部
         qt = pt;
         pt = pt->next;
       }
     }
+    //等于NULL说明终结符不在first中
     if (NULL == pt)
     {
+      //在尾部添加此终结符
       pt = (struct collectNode *)malloc(sizeof(struct collectNode));
       pt->nVt = nCh;
       pt->next = NULL;
+      //如果头指针是空的话,将头指向pt
       if (NULL == first[U - 100])
       {
         first[U - 100] = pt;
       }
       else
       {
-        qt->next = pt; /*qt指向first集的最后一个元素*/
+        //头指针不为空,将pt添加到尾部
+        qt->next = pt;
       }
+      //pt指向空
       pt = pt->next;
     }
   }
   else
   {
+    //将非终结符nCh的first集添加给U
     pt = first[nCh - 100];
+    //若nCh的非终结符链表非空
     while (NULL != pt)
     {
+      //遍历nCh的first集链表
       ch = pt->nVt;
       if (-1 != ch)
       {
+        //递归调用
         AddFirst(U, ch);
       }
       pt = pt->next;
     }
   }
 }
-/*判断first集中是否有空(-1)*/
+//2.3判断某字符的first集中是否有空(-1)
 bool HaveEmpty(int nVn)
 {
-  if (nVn < 100) /*为终结符时(含-1)，在follow集中用到*/
+  //为终结符时
+  if (nVn < 100)
     return false;
   struct collectNode *pt;
+  //遍历nVn的first集
   pt = first[nVn - 100];
   while (NULL != pt)
   {
@@ -542,31 +558,42 @@ bool HaveEmpty(int nVn)
   }
   return false;
 }
-/*计算follow集,例：U->xVy,U->xV.(注：初始符必含#——"-1")*/
+//2.4计算非终结符V的follow集
 void Follow(int V)
 {
   int i;
   struct pRNode *pt;
-  if (100 == V) /*当为初始符时*/
+  //如果是开始符,将#加入其follow
+  if (100 == V)
     AddFollow(V, -1, 0);
+  //遍历产生式
   for (i = 0; i < PNum; i++)
   {
+    //遍历产生式右部
     pt = P[i].rHead;
-    while (NULL != pt && pt->rCursor != V) /*注此不能处理：U->xVyVz的情况*/
+    //沿产生式右部链表找到V
+    while (NULL != pt && pt->rCursor != V)
       pt = pt->next;
+    //如果当前指向V
     if (NULL != pt)
     {
-      pt = pt->next;  /*V右侧的符号*/
-      if (NULL == pt) /*当V后为空时V->xV，将左符的follow集并入V的follow集中*/
+      //得到V的右边字符
+      pt = pt->next;
+      //为空说明是 A->aV的情况,将A的follow添加给V
+      if (NULL == pt)
       {
+        //如果A的follow为空 并且A!=V
         if (NULL == follow[P[i].lCursor - 100] && P[i].lCursor != V)
         {
+          //计算A的follow
           Follow(P[i].lCursor);
         }
+        //将A的follow添加给V
         AddFollow(V, P[i].lCursor, 0);
       }
-      else /*不为空时V->xVy,(注意：y->)，调用AddFollow加入Vt或y的first集*/
+      else
       {
+        //不为空时V->xVy,(注意：y->)，调用AddFollow加入Vt或y的first集
         while (NULL != pt && HaveEmpty(pt->rCursor))
         {
           AddFollow(V, pt->rCursor, 1); /*y的前缀中有空时，加如first集*/
@@ -574,10 +601,13 @@ void Follow(int V)
         }
         if (NULL == pt) /*当后面的字符可以推出空时*/
         {
+          //如果此产生式左部的first集为空并且左部不等于V
           if (NULL == follow[P[i].lCursor - 100] && P[i].lCursor != V)
           {
+            //计算产生式左部的follow
             Follow(P[i].lCursor);
           }
+          //将产生式左部的follow加入到V的follow
           AddFollow(V, P[i].lCursor, 0);
         }
         else /*发现不为空的字符时*/
@@ -588,18 +618,22 @@ void Follow(int V)
     }
   }
 }
-/*当数值小于100时nCh为Vt*/
-/*#用-1表示,kind用于区分是并入符号的first集，还是follow集
-kind = 0表加入follow集，kind = 1加入first集*/
+//2.5加入follow集
 void AddFollow(int V, int nCh, int kind)
 {
+  /*当数值小于100时nCh为Vt*/
+  /*#用-1表示,kind用于区分是并入符号的first集，还是follow集
+  kind = 0表加入follow集，kind = 1加入first集*/
   struct collectNode *pt, *qt;
-  int ch; /*用于处理Vn*/
+  int ch;
   pt = NULL;
   qt = NULL;
-  if (nCh < 100) /*为终结符时*/
+  //为终结符时
+  if (nCh < 100)
   {
+    //得到被添加的非终结符的follow
     pt = follow[V - 100];
+    //在follow中寻找此终结符
     while (NULL != pt)
     {
       if (pt->nVt == nCh)
@@ -610,29 +644,37 @@ void AddFollow(int V, int nCh, int kind)
         pt = pt->next;
       }
     }
+    //若其follow集中无此终结符
     if (NULL == pt)
     {
+      //将此终结符添加到V的follow中
       pt = (struct collectNode *)malloc(sizeof(struct collectNode));
       pt->nVt = nCh;
       pt->next = NULL;
+      //若follow集为空,直接当作头指针
       if (NULL == follow[V - 100])
       {
         follow[V - 100] = pt;
       }
       else
       {
-        qt->next = pt; /*qt指向follow集的最后一个元素*/
+        //qt指向最后一个元素,将pt添加到qt的next
+        qt->next = pt;
       }
+      //释放指针
       pt = pt->next;
     }
   }
-  else /*为非终结符时，要区分是加first还是follow*/
+  else //当nCh为非终结符时,要判断要加入nCh的first还是follow
   {
+    //如果要加入nCh的follow
     if (0 == kind)
     {
+      //遍历nCh的follow
       pt = follow[nCh - 100];
       while (NULL != pt)
       {
+        //得到follow中的终结符,并添加给V
         ch = pt->nVt;
         AddFollow(V, ch, 0);
         pt = pt->next;
@@ -640,9 +682,11 @@ void AddFollow(int V, int nCh, int kind)
     }
     else
     {
+      //遍历nCh的first
       pt = first[nCh - 100];
       while (NULL != pt)
       {
+        //得到first中的非空终结符,并添加给V
         ch = pt->nVt;
         if (-1 != ch)
         {
@@ -653,18 +697,20 @@ void AddFollow(int V, int nCh, int kind)
     }
   }
 }
-/*输出first或follow集*/
+//2.6输出first或follow集
 void ShowCollect(struct collectNode **collect)
 {
   int i;
   struct collectNode *pt;
   i = 0;
+  //循环遍历数组,若第i非终结符的集合头指针非空
   while (NULL != collect[i])
   {
     pt = collect[i];
     printf("\n%c:\t", Vn[i]);
     while (NULL != pt)
     {
+      //若下标不等于-1即节点不表示空
       if (-1 != pt->nVt)
       {
         printf(" %c", Vt[pt->nVt]);
@@ -677,7 +723,7 @@ void ShowCollect(struct collectNode **collect)
   }
   printf("\n");
 }
-/*计算first和follow*/
+//2.7计算first和follow
 void FirstFollow()
 {
   int i;
@@ -697,43 +743,54 @@ void FirstFollow()
   }
 }
 
-//================= 构造预测分析表 =============//
+//==================== 3.计算预测分析表 ========================
+//3.1构造预测分析表
 void CreateAT()
 {
   int i;
   struct pRNode *pt;
   struct collectNode *ct;
+  //遍历产生式
   for (i = 0; i < PNum; i++)
   {
+    //得到右部头节点
     pt = P[i].rHead;
-    while (NULL != pt && HaveEmpty(pt->rCursor))
+    //1.第一个右部字符为vn,且first无空
+    while (NULL != pt && HaveEmpty(pt->rCursor)) //当为终结符时first定含空,不会进入循环
     {
-      /*处理非终结符，当为终结符时，定含空为假跳出*/
+      //循环遍历first集
       ct = first[pt->rCursor - 100];
       while (NULL != ct)
       {
+        //若此first集字符不为空
         if (-1 != ct->nVt)
+          //给当前产生式的左部添加此产生式的下标
           analyseTable[P[i].lCursor - 100][ct->nVt] = i;
         ct = ct->next;
       }
       pt = pt->next;
     }
+    //2.第一个右部字符为空
     if (NULL == pt)
     {
-      /*NULL == pt，说明xyz->,用到follow中的符号*/
+      //将左部的follow添加给左部的预测分析表
       ct = follow[P[i].lCursor - 100];
       while (NULL != ct)
       {
+        //若此follow集字符不为空
         if (-1 != ct->nVt)
+          //给当前产生式的左部添加此产生式的下标
           analyseTable[P[i].lCursor - 100][ct->nVt] = i;
-        else /*当含有#号时*/
+        else
+          //vtNum下标表示空
           analyseTable[P[i].lCursor - 100][vtNum] = i;
         ct = ct->next;
       }
     }
     else
     {
-      if (100 <= pt->rCursor) /*不含空的非终结符*/
+      //3.第一个右部字符为终结符
+      if (100 <= pt->rCursor)
       {
         ct = first[pt->rCursor - 100];
         while (NULL != ct)
@@ -742,7 +799,8 @@ void CreateAT()
           ct = ct->next;
         }
       }
-      else /*终结符或者空*/
+      //4.第一个右部字符为非终结符
+      else
       {
         if (-1 == pt->rCursor) /*-1为空产生式时*/
         {
@@ -764,21 +822,22 @@ void CreateAT()
     }
   }
 }
-/*输出分析表*/
+//3.2输出分析表
 void ShowAT()
 {
   int i, j;
-  printf("构造预测分析表如下：\n");
-  printf("\t|\t");
+  printf("构造预测分析表如下：\n\t|\t");
+  //输出一行终结符
   for (i = 0; i < vtNum; i++)
   {
     printf("%c\t", Vt[i]);
   }
-  printf("#\t\n");
-  printf("- - -\t|- - -\t");
+  //格式化
+  printf("#\t\n- - -\t|- - -\t");
   for (i = 0; i <= vtNum; i++)
     printf("- - -\t");
   printf("\n");
+  //输出非终结符
   for (i = 0; i < vnNum; i++)
   {
     printf("%c\t|\t", Vn[i]);
@@ -787,34 +846,43 @@ void ShowAT()
       if (-1 != analyseTable[i][j])
         printf("R(%d)\t", analyseTable[i][j]);
       else
-        printf("error\t");
+        printf("empty\t");
     }
     printf("\n");
   }
 }
-//================= 主控程序 =====================//
+//==================== 4.分析句子 =============================
+//主控程序
 void Identify(char *st)
 {
-  int current, step, r; /*r表使用的产生式的序号*/
+  //current:符号指示器; r:产生式序号
+  int current, step, r;
   printf("\n%s的分析过程：\n", st);
   printf("步骤\t分析符号栈\t当前指示字符\t使用产生式序号\n");
 
-  step = 0;
-  current = 0; /*符号串指示器*/
+  current = step = 0;
   printf("%d\t", step);
   ShowStack();
+
+  //第0个待分析字符
   printf("\t\t%c\t\t- -\n", st[current]);
+  //只要未读到#
   while ('#' != st[current])
   {
-    if (100 > analyseStack[topAnalyse]) /*当为终结符时*/
+    //当前的分析栈顶为非终结符 初始化时top指向1：开始符
+    if (100 > analyseStack[topAnalyse])
     {
+      //如果当前的待分析符等于分析栈顶符
       if (analyseStack[topAnalyse] == IndexCh(st[current]))
       {
-        /*匹配出栈，指示器后移*/
+        //匹配出栈
         Pop();
+        //指示器后移
         current++;
+        //步骤+1
         step++;
         printf("%d\t", step);
+        //打印分析栈
         ShowStack();
         printf("\t\t%c\t\t出栈、后移\n", st[current]);
       }
@@ -825,7 +893,7 @@ void Identify(char *st)
         return;
       }
     }
-    else /*当为非终结符时*/
+    else //当为非终结符时
     {
       r = analyseTable[analyseStack[topAnalyse] - 100][IndexCh(st[current])];
       if (-1 != r)
@@ -838,6 +906,7 @@ void Identify(char *st)
       }
       else
       {
+        //预测表推导不出
         printf("无可用产生式，此串不是此文法的句子！\n");
         return;
       }
@@ -889,27 +958,30 @@ void Identify(char *st)
     }
   }
 }
-/*初始化栈及符号串*/
+//初始化栈及符号串
 void InitStack()
 {
   int i;
-  /*分析栈的初始化*/
+  //分析栈的初始化*/
   for (i = 0; i < MaxStLength; i++)
     st[i] = '\0';
   analyseStack[0] = -1;  /*#(-1)入栈*/
   analyseStack[1] = 100; /*初始符入栈*/
   topAnalyse = 1;
 }
-/*显示符号栈中内容*/
+//打印符号栈中内容
 void ShowStack()
 {
   int i;
+  //从栈底便利分析栈
   for (i = 0; i <= topAnalyse; i++)
   {
+    //如果是非终结符
     if (100 <= analyseStack[i])
       printf("%c", Vn[analyseStack[i] - 100]);
-    else
+    else //如果是终结符
     {
+      //如果不为空
       if (-1 != analyseStack[i])
         printf("%c", Vt[analyseStack[i]]);
       else
@@ -917,12 +989,12 @@ void ShowStack()
     }
   }
 }
-/*栈顶出栈*/
+//栈顶出栈
 void Pop()
 {
   topAnalyse--;
 }
-/*使用产生式入栈操作*/
+//入栈:存储第r个产生式的右部
 void Push(int r)
 {
   int i;
@@ -931,10 +1003,12 @@ void Push(int r)
   pt = P[r].rHead;
   if (-1 == pt->rCursor) /*为空产生式时*/
     return;
+  //栈长度加上产生式
   topAnalyse += P[r].rLength;
+  //从栈顶开始逆序入栈
   for (i = 0; i < P[r].rLength; i++)
-  {                                             /*不为空产生式时*/
-    analyseStack[topAnalyse - i] = pt->rCursor; /*逆序入栈*/
+  {
+    analyseStack[topAnalyse - i] = pt->rCursor;
     pt = pt->next;
-  } /*循环未完时pt为空，则说明rLength记录等出错*/
+  }
 }
